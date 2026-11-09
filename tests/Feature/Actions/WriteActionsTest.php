@@ -21,6 +21,7 @@ use App\Actions\Archivist\Links\UpdateLink;
 use App\Actions\Archivist\Locations\CreateLocation;
 use App\Actions\Archivist\Moments\CreateMoment;
 use App\Actions\Archivist\Quests\CreateQuest;
+use App\Actions\Archivist\Quests\UpdateQuest;
 use App\Actions\Archivist\Sessions\PatchSession;
 use App\Data\LinkMaintenanceResultData;
 use App\Data\SuccessData;
@@ -33,6 +34,26 @@ use Tests\FeatureTestCase;
 final class WriteActionsTest extends FeatureTestCase
 {
     private const BASE_URL = 'https://api.myarchivist.test';
+
+    #[Test]
+    public function update_quest_forwards_entry_ids_and_session(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/v1/quests/quest_1' => Http::response($this->fakeQuest(), 200),
+        ]);
+
+        UpdateQuest::make()->execute([
+            'quest_id' => 'quest_1',
+            'objectives' => [['id' => 'objective_1', 'text' => 'Find the key', 'status' => 'completed']],
+            'progress_log' => [['id' => 'progress_1', 'text' => 'Found a clue', 'session_id' => 'session_1']],
+        ]);
+
+        Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
+            && $request->url() === self::BASE_URL.'/v1/quests/quest_1'
+            && $request['objectives'][0]['id'] === 'objective_1'
+            && $request['progress_log'][0]['id'] === 'progress_1'
+            && $request['progress_log'][0]['session_id'] === 'session_1');
+    }
 
     protected function setUp(): void
     {
