@@ -13,7 +13,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[Description(
     'Get a player character\'s Character Arc: facets grouped under the campaign\'s arc themes '.
     '(Character Development, Relationships, Combat & Capability, Knowledge & Discovery, '.
-    'Reputation & Affiliation, Items & Resources, Conditions & Consequences). Each facet has its '.
+    'Reputation & Affiliation, Items & Resources, Conditions & Consequences). '.
+    'themes is a list and may be empty when the campaign has no arc themes yet. Each facet has its '.
     'id, text, session (session_id/session_number), status and version_count. '.
     'status: "approved" = the canonical arc as the web app shows it; "pending" = changes '.
     'proposed by session processing that await review (the Character Arc Changes dialog), each with '.
