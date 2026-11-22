@@ -10,12 +10,14 @@ use App\Actions\Archivist\Characters\ReviewCharacterArcRun;
 use App\Actions\Archivist\Characters\UpdateCharacterArcFacet;
 use App\Actions\Archivist\Properties\UpdateEntityProperties;
 use App\Actions\Archivist\Quests\UpdateQuest;
+use App\Exceptions\DtoValidationException;
 use App\Mcp\Servers\ArchivistServer;
 use App\Mcp\Tools\Characters\GetCharacterTool;
 use App\Mcp\Tools\Sessions\PatchSessionTool;
 use App\Services\ArchivistClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\FeatureTestCase;
@@ -144,6 +146,51 @@ final class PropertiesAndCharacterArcActionsTest extends FeatureTestCase
         $this->assertSame(3, $review->get('affected'));
         Http::assertSent(fn (Request $request) => $request->url() === self::BASE_URL.'/v1/characters/char_1/arc/runs/run_1/review'
             && $request['action'] === 'approve');
+    }
+
+    #[Test]
+    public function get_character_arc_accepts_a_payload_without_themes(): void
+    {
+        Exceptions::fake();
+
+        Http::fake([
+            self::BASE_URL.'/v1/characters/char_missing/arc' => Http::response([
+                'character_id' => 'char_missing',
+            ], 200),
+            self::BASE_URL.'/v1/characters/char_null/arc' => Http::response([
+                'character_id' => 'char_null',
+                'themes' => null,
+            ], 200),
+            self::BASE_URL.'/v1/characters/char_empty/arc' => Http::response([
+                'character_id' => 'char_empty',
+                'themes' => [],
+            ], 200),
+            self::BASE_URL.'/v1/characters/char_kept/arc' => Http::response([
+                'character_id' => 'char_kept',
+                'themes' => [[
+                    'id' => 't1',
+                    'key' => 'Relationships',
+                    'title' => 'Relationships',
+                    'description' => null,
+                    'facets' => [],
+                ]],
+            ], 200),
+        ]);
+
+        $this->assertSame([], GetCharacterArc::make()->execute(['character_id' => 'char_missing'])->get('themes'));
+        $this->assertSame([], GetCharacterArc::make()->execute(['character_id' => 'char_null'])->get('themes'));
+        $this->assertSame([], GetCharacterArc::make()->execute(['character_id' => 'char_empty'])->get('themes'));
+
+        $kept = GetCharacterArc::make()->execute(['character_id' => 'char_kept']);
+        $this->assertSame([[
+            'id' => 't1',
+            'key' => 'Relationships',
+            'title' => 'Relationships',
+            'description' => null,
+            'facets' => [],
+        ]], $kept->get('themes'));
+
+        Exceptions::assertNotReported(DtoValidationException::class);
     }
 
     #[Test]

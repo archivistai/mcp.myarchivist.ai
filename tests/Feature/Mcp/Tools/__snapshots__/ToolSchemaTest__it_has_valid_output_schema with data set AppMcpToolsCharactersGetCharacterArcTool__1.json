@@ -9,7 +9,6 @@
     },
     "type": "object",
     "required": [
-        "character_id",
-        "themes"
+        "character_id"
     ]
 }
